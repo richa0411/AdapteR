@@ -435,6 +435,7 @@ as.sparseMatrix.FLMatrix <- function(object) {
 as.FLMatrix.FLVector <- function(object,sparse=TRUE,
                 rows=length(object),cols=1,connection=NULL)
 {
+  #browser()
   if(is.null(connection)) connection <- getConnection(object)
   ##Get names of vector
   if(ncol(object)>1)
@@ -834,8 +835,25 @@ as.FLTable.data.frame <- function(object,
     .jcall(connection@jc,"V","setAutoCommit",TRUE)
   }
 
-  return(FLTable(getOption("ResultDatabaseFL"),
-                  tableName,
-                  obsIdColname
-                  ))
+  # return(FLTable(getOption("ResultDatabaseFL"),
+  #                 tableName,
+  #                 obsIdColname
+  #                 ))
+   select <- new(
+        "FLSelectFrom",
+        connection = getOption("connectionFL"), 
+        database = getOption("ResultDatabaseFL"), 
+        table_name = tableName, 
+        variables = list(
+                obs_id_colname = obsIdColname),
+                #var_id_colname = var_id_colnames,
+                #cell_val_colname = cell_val_colname),
+        whereconditions=character(0),
+        order = "")
+
+    return(new("FLTable", 
+             select = select,
+             dimnames = list(object[,obsIdColname],
+                            colnames(object)),
+             isDeep = FALSE))
 }
