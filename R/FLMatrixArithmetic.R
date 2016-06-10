@@ -206,15 +206,62 @@ FLMatrixArithmetic.FLMatrix <- function(pObj1,pObj2,pOperator)
 FLMatrixArithmetic.FLVector <- function(pObj1,pObj2,pOperator)
 {
 	connection <- getConnection(pObj1)
+	a <- genRandVarName()
+    b <- genRandVarName()
 	if(is.FLMatrix(pObj2))
 	{
-		if(pOperator %in% c("%*%"))
+		if(pOperator %in% c("%*%")){
 		  if(length(pObj1) == nrow(pObj2))
-			pObj1 <- as.FLMatrix(pObj1,rows=1,cols=length(pObj1))
+			#pObj1 <- as.FLMatrix(pObj1,rows=1,cols=length(pObj1))
+			{
+				sqlstr <-paste0(" SELECT '%insertIDhere%' AS MATRIX_ID, \n ",
+                                   "1 AS rowIdColumn, \n ",
+                                    b,".colIdColumn AS colIdColumn, \n ",
+                                    "FLSumProd(",a,".vectorValueColumn,",
+                                          b,".valueColumn) AS valueColumn \n ",
+                            " FROM (",constructSelect(pObj1),") AS ",a,
+                                   ",(",constructSelect(pObj2),") AS ",b,
+                            constructWhere(paste0(" 1 = ",b,".rowIdColumn ")),
+                            " GROUP BY 1,2,3")
+        		dims <- c(1,ncol(pObj2))
+        		dimnames <- list(NULL,colnames(pObj2))
+			}
 		  else if(nrow(pObj2)==1)
-			pObj1 <- as.FLMatrix(pObj1)
+			#pObj1 <- as.FLMatrix(pObj1)
+			{
+				sqlstr <-paste0(" SELECT '%insertIDhere%' AS MATRIX_ID, \n ",
+                                     a,".vectorIndexColumn AS rowIdColumn, \n ",
+                                     b,".colIdColumn AS colIdColumn, \n ",
+                                     "FLSumProd(",a,".vectorvaluecolumn,",
+                                          b,".valueColumn) AS valueColumn \n ",
+                            " FROM (",constructSelect(pObj1),") AS ",a,
+                                   ",(",constructSelect(pObj2),") AS ",b,
+                            constructWhere(paste0(a,".vectorIndexColumn = ",b,".rowIdColumn")),
+                            " GROUP BY 1,2,3")
+        		dims<-c(length(pObj1),ncol(pObj2))
+        		dimnames<-list(NULL,colnames(pObj2))
+    		}
 			else
 			stop(" non-conformable dimensions ")
+			tblfunqueryobj <- new("FLTableFunctionQuery",
+                        connection = connection,
+                        variables=list(
+                            rowIdColumn="rowIdColumn",
+                            colIdColumn="colIdColumn",
+                            valueColumn="valueColumn"),
+                        whereconditions="",
+                        order = "",
+                        SQLquery=sqlstr)
+
+                flm <- new("FLMatrix",
+                                   select= tblfunqueryobj,
+                                   dim=dims,
+                                   dimnames=dimnames)
+
+                return(ensureQuerySize(pResult=flm,
+                                pInput=list(pObj1,pObj2),
+                                pOperator=pOperator))
+            }
 		else if(pOperator %in% c("+","-","%/%","%%","/","*","**"))
 		pObj1 <- as.FLMatrix(pObj1,
 					sparse=TRUE,rows=nrow(pObj2),cols=ncol(pObj2))
@@ -248,10 +295,43 @@ FLMatrixArithmetic.FLVector <- function(pObj1,pObj2,pOperator)
 
 		if(pOperator %in% c("%*%"))
 		{
-			if(length(pObj2) != length(pObj1)) stop(" non-conformable dimensions ")
-			pObj1 <- as.FLMatrix(pObj1,rows=1,cols=length(pObj1))
-			pObj2 <- as.FLMatrix(pObj2)
-			return(pObj1 %*% pObj2)
+			if(length(pObj2) == length(pObj1)){
+				sqlstr <- paste0("SELECT FLSumProd(a.vectorValueColumn,",
+													"b.vectorValueColumn) \n ",
+								" FROM(",constructSelect(pObj1),") a, \n ",
+										"(",constructSelect(pObj2),") b \n ",
+								" WHERE a.vectorIndexColumn = b.vectorIndexColumn \n ")
+				return(as.matrix(sqlQuery(getOption("connectionFL"),sqlstr)[1,1]))
+			}
+			else if(length(pObj1)==1)
+			sqlstr <- paste0("SELECT '%insertIDhere%' AS MATRIX_ID, \n ",
+									"1 AS rowIdColumn, \n ",
+									"b.vectorIndexColumn AS colIdColumn, \n ",
+									"a.vectorValueColumn * b.vectorValueColumn AS valueColumn \n ",
+							" FROM(",constructSelect(pObj1),") a, \n ",
+									"(",constructSelect(pObj2),") b \n ")
+			else
+			stop(" non-conformable dimensions ")
+
+			tblfunqueryobj <- new("FLTableFunctionQuery",
+                        connection = connection,
+                        variables=list(
+                            rowIdColumn="rowIdColumn",
+                            colIdColumn="colIdColumn",
+                            valueColumn="valueColumn"),
+                        whereconditions="",
+                        order = "",
+                        SQLquery=sqlstr)
+
+            flm <- new("FLMatrix",
+                               select= tblfunqueryobj,
+                               dim=c(1,length(pObj2)),
+                               dimnames=list(1,1:length(pObj2)))
+
+            return(ensureQuerySize(pResult=flm,
+                            pInput=list(pObj1,pObj2),
+                            pOperator=pOperator))
+
 		}
 		else if(pOperator %in% c("+","-","%/%","%%","/","*","**"))
 		{
