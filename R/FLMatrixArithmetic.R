@@ -149,6 +149,11 @@ FLMatrixArithmetic.FLMatrix <- function(pObj1,pObj2,pOperator)
                                              sparse=TRUE,rows=nrow(pObj1),cols=ncol(pObj1))
 			else if(pOperator %in% c("%*%"))
 			{
+				## if(length(pObj2) == ncol(pObj1))
+				## pObj2 <- as.FLMatrix(pObj2)
+				## else if(ncol(pObj1)==1)
+				## pObj2 <- as.FLMatrix(pObj2,rows=1,cols=length(pObj2))
+                ## gk:  please think of creating FLMatrix from FLVector table data wout copying and then use matrix multiplication
 				if(length(pObj2) == ncol(pObj1)){
 					sqlstr <-paste0(" SELECT '%insertIDhere%' AS MATRIX_ID, \n ",
                                      	a,".rowIdColumn AS rowIdColumn, \n ",
@@ -194,7 +199,7 @@ FLMatrixArithmetic.FLMatrix <- function(pObj1,pObj2,pOperator)
 
 		        return(ensureQuerySize(pResult=flm,
 		                        pInput=list(pObj1,pObj2),
-		                        pOperator=pOperator))    
+		                        pOperator=pOperator))
 			}
 
 			return(do.call(pOperator,list(pObj1,pObj2)))
@@ -212,6 +217,7 @@ FLMatrixArithmetic.FLVector <- function(pObj1,pObj2,pOperator)
 	{
 		if(pOperator %in% c("%*%")){
 		  if(length(pObj1) == nrow(pObj2))
+            ## gk:  please think of creating FLMatrix from FLVector table data wout copying and then use matrix multiplication
 			#pObj1 <- as.FLMatrix(pObj1,rows=1,cols=length(pObj1))
 			{
 				sqlstr <-paste0(" SELECT '%insertIDhere%' AS MATRIX_ID, \n ",
@@ -265,7 +271,7 @@ FLMatrixArithmetic.FLVector <- function(pObj1,pObj2,pOperator)
 		else if(pOperator %in% c("+","-","%/%","%%","/","*","**"))
 		pObj1 <- as.FLMatrix(pObj1,
 					sparse=TRUE,rows=nrow(pObj2),cols=ncol(pObj2))
-		
+
 		return(do.call(pOperator,list(pObj1,pObj2)))
 	}
 	else if(is.vector(pObj2))
@@ -295,6 +301,12 @@ FLMatrixArithmetic.FLVector <- function(pObj1,pObj2,pOperator)
 
 		if(pOperator %in% c("%*%"))
 		{
+            ## gk:  please think of creating FLMatrix from FLVector table data wout copying and then use matrix multiplication
+			## if(length(pObj2) != length(pObj1)) stop(" non-conformable dimensions ")
+			## pObj1 <- as.FLMatrix(pObj1,rows=1,cols=length(pObj1))
+			## pObj2 <- as.FLMatrix(pObj2)
+			## return(pObj1 %*% pObj2)
+
 			if(length(pObj2) == length(pObj1)){
 				sqlstr <- paste0("SELECT FLSumProd(a.vectorValueColumn,",
 													"b.vectorValueColumn) \n ",
@@ -580,11 +592,11 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{+} returns an in-database object if there is atleast one in-database object 
+#' @return \code{+} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix + Rvector
@@ -642,11 +654,11 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{-} returns an in-database object if there is atleast one in-database object 
+#' @return \code{-} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 2,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix - Rvector
@@ -704,11 +716,11 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{\%*\%} returns an in-database object if there is atleast one in-database object 
+#' @return \code{\%*\%} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 5,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix %*% Rvector
@@ -728,7 +740,7 @@ return(FLMatrixArithmetic.default(pObj1,pObj2,"%*%"))
 return(FLMatrixArithmetic(pObj1,pObj2,"%*%"))
 
 #' @export
-`%*%.numeric` <- function(pObj1,pObj2)	
+`%*%.numeric` <- function(pObj1,pObj2)
 return(FLMatrixArithmetic(pObj1,pObj2,"%*%"))
 
 #' @export
@@ -737,7 +749,7 @@ return(FLMatrixArithmetic(pObj1,pObj2,"%*%"))
 
 #' @export
 `%*%.FLMatrixBind` <- crossProdFLMatrix
- 
+
 #' @export
 `%*%.FLMatrix` <- crossProdFLMatrix
 
@@ -768,13 +780,13 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{\%\%} returns an in-database object if there is atleast one in-database object 
+#' @return \code{\%\%} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
-#' @section Constraints: division by 0 gives inf in R, but is not supported for 
+#' @section Constraints: division by 0 gives inf in R, but is not supported for
 #' in-database objects
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix %% Rvector
@@ -832,11 +844,11 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{*} returns an in-database object if there is atleast one in-database object 
+#' @return \code{*} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix * Rvector
@@ -894,13 +906,13 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{/} returns an in-database object if there is atleast one in-database object 
+#' @return \code{/} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
-#' @section Constraints: division by 0 gives inf in R, but is not supported for 
+#' @section Constraints: division by 0 gives inf in R, but is not supported for
 #' in-database objects
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix / Rvector
@@ -958,13 +970,13 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{\%/\%} returns an in-database object if there is atleast one in-database object 
+#' @return \code{\%/\%} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
-#' @section Constraints: division by 0 gives inf in R, but is not supported for 
+#' @section Constraints: division by 0 gives inf in R, but is not supported for
 #' in-database objects
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix %/% Rvector
@@ -1021,11 +1033,11 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{**} returns an in-database object if there is atleast one in-database object 
+#' @return \code{**} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix ** Rvector
@@ -1082,11 +1094,11 @@ NULL
 #' a normal R object like matrix,sparseMatrix,vector
 #' @param pObj2 can be an in-database object like FLMatrix,FLSparseMatrix,FLVector or
 #' a normal R object like matrix,sparseMatrix,vector
-#' @return \code{^} returns an in-database object if there is atleast one in-database object 
+#' @return \code{^} returns an in-database object if there is atleast one in-database object
 #' as input.Otherwise, the default behavior of R is preserved
 #' @examples
 #' connection <- flConnect(odbcSource="Gandalf")
-#' flmatrix <- FLMatrix("FL_DEMO", 
+#' flmatrix <- FLMatrix("FL_DEMO",
 #' "tblMatrixMulti", 1,"MATRIX_ID","ROW_ID","COL_ID","CELL_VAL")
 #' Rvector <- 1:5
 #' ResultFLmatrix <- flmatrix ** Rvector
