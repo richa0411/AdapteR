@@ -434,6 +434,7 @@ as.sparseMatrix.FLMatrix <- function(object) {
   return(m)
 }
 
+# gk: fix this function: create a FLMatrix from FLVector table data without copying any data
 #' @export
 as.FLMatrix.FLVector <- function(object,sparse=TRUE,
                 rows=length(object),cols=1,connection=NULL)
