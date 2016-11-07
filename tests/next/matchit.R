@@ -27,8 +27,8 @@ Renv$dataf <- dataf
 FLenv <- as.FL(Renv)
 
 dataf<-FLenv$dataf
-#F denotes formula
-F <- var3 ~ var1+var2
+#Forml denotes formula
+Forml <- var3 ~ var1+var2
 fit <- glm(F,data=dataf, family="binomial")
 
 #predict
